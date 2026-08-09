@@ -1,27 +1,49 @@
+from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import  ContextTypes
 from pdf2image import convert_from_path
+import cloudinary.uploader
+import cloudinary
+import os
+import chromadb
+from google import genai
+from google.genai import types
+import io
+from utils.random_string import random_string
+load_dotenv()
 
 async def document(update: Update, context: ContextTypes) -> None:
     if update.message.document:
         if update.message.document.mime_type == "application/pdf":
             try:
+                gemini = genai.Client(api_key=os.getenv("GENAI_API_KEY"))
+                client = chromadb.PersistentClient(path=".venv/chromadb_db")
+                collection = client.get_collection(name="dosen-ai")
+                cloudinary.config(
+                    cloud_name="ddgad1ttp",
+                    api_key=os.getenv("CLOUDINARY_API_KEY"),
+                    api_secret=os.getenv("CLOUDINARY_API_SECRET")
+                )
                 document = update.message.document
                 pdf_file = await document.get_file()
                 images = convert_from_path(pdf_file.file_path, fmt='jpeg')    
-                print(images, 'test')    
-                # document = update.message.document
-                # file_id = document.file_id
-                # file_name = document.file_name
-                # file_size = document.file_size
-                # file_type= document.mime_type
-                # await update.message.reply_text(
-                #     f"Received document:\n"
-                #     f"File ID: {file_id}\n"
-                #     f"File Name: {file_name}\n"
-                #     f"File Size: {file_size} bytes"
-                #     f"File Type: {file_type}"
-                # )
+                for i in range(len(images)):
+                    stream = io.BytesIO()
+                    images[i].save(stream, "JPEG")
+                    image_bytes = stream.getvalue()
+                    convert_embed = gemini.models.embed_content(
+                        model="gemini-embedding-2",
+                        contents=[
+                            types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
+                        ],
+                        config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT")
+
+                    )
+
+                    public_id = random_string()
+                    collection.add(embeddings=[convert_embed.embeddings[0].values], ids=[f"image_{collection.count() + 1}"], metadatas=[{"title": f"{document.file_name}_page_{i + 1}"}])
+                    cloudinary.uploader.upload(image_bytes, public_id=public_id, folder="pdf_pages")
+              
             except Exception as e:
                 print(f"Error occurred while processing the document: {e}")
                 await update.message.reply_text("Sorry, I encountered an error while processing your document.")
