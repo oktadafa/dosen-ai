@@ -9,6 +9,7 @@ import chromadb
 from google import genai
 from google.genai import types
 import io
+from database.database import insert_image, insert_message
 from utils.random_string import random_string
 load_dotenv()
 
@@ -16,6 +17,7 @@ async def document(update: Update, context: ContextTypes) -> None:
     if update.message.document:
         if update.message.document.mime_type == "application/pdf":
             try:
+                message_id = insert_message("user", update.message.caption )
                 gemini = genai.Client(api_key=os.getenv("GENAI_API_KEY"))
                 client = chromadb.PersistentClient(path=".venv/chromadb_db")
                 collection = client.get_collection(name="dosen-ai")
@@ -39,10 +41,11 @@ async def document(update: Update, context: ContextTypes) -> None:
                         config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT")
 
                     )
-
                     public_id = random_string()
-                    collection.add(embeddings=[convert_embed.embeddings[0].values], ids=[f"image_{collection.count() + 1}"], metadatas=[{"title": f"{document.file_name}_page_{i + 1}"}])
-                    cloudinary.uploader.upload(image_bytes, public_id=public_id, folder="pdf_pages")
+                    response = cloudinary.uploader.upload(image_bytes, public_id=public_id, folder="pdf_pages")
+                    image_id = insert_image(response["secure_url"], f"{document.file_name}_page_{i + 1}", message_id)
+                    collection.add(embeddings=[convert_embed.embeddings[0].values], ids=[f"image_{collection.count() + 1}"], metadatas=[{"title": f"{document.file_name}_page_{i + 1}", "image_id": str(image_id)}])
+
               
             except Exception as e:
                 print(f"Error occurred while processing the document: {e}")

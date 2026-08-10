@@ -16,9 +16,21 @@ def insert_message(role: str, message: str):
             (str(id), role, message, dateNow)
         )
         conn.commit()
+    return id
 
 def get_history_messages():
     with current_db() as cur:
         cur.execute("SELECT role, message, datetime FROM messages ORDER BY datetime DESC LIMIT 5")
         rows = cur.fetchall()
         return [{"role": row[0], "message": row[1], "datetime": row[2]} for row in rows]
+
+
+def insert_image(public_url, filename: str, message_id:str, ):
+    id = uuid4()
+    with current_db() as cur:
+        cur.execute(
+            "INSERT INTO images (id, public_url, filename, message_id) VALUES (%s, %s, %s, %s)",
+            (str(id), public_url, filename, message_id)
+        )
+        conn.commit()
+    return id
