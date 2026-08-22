@@ -5,16 +5,22 @@ import asyncio
 from dotenv import load_dotenv
 # from google import genai
 from utils.split_message_html import split_message_html
-from database.database import insert_message, get_history_messages
+from database.database import insert_message, get_history_messages, get_images
 from telegram.error import BadRequest
 import re
-from  model.model import interaction_ai
+import chromadb
+import requests
+from io import BytesIO
+from PIL import Image
+
+from  model.model import interaction_ai, embed_ai
 load_dotenv()
 
 
 
 async def message(update:Update, context:ContextTypes.DEFAULT_TYPE)-> None:
     chunks = []
+    images = []
     async def keep_typing():
        try:
            while True:
@@ -26,6 +32,28 @@ async def message(update:Update, context:ContextTypes.DEFAULT_TYPE)-> None:
             
     typing_task = asyncio.create_task(keep_typing())        
     try: 
+        client = chromadb.PersistentClient(path=".venv/chromadb_db")
+        collection = client.get_collection(name="dosen-ai")
+        embed_query = await embed_ai(contents=[update.message.text], taskType="RETRIEVAL_QUERY")
+        print(embed_query) 
+        get_query = collection.query(
+            query_embeddings=[embed_query.embeddings[0].values],
+            n_results=3,
+            include=["metadatas", "distances"]
+        )
+        
+        for result in range(len(get_query['ids'][0])):
+            print(get_query,'test')
+            if(get_query['distances'][0][result] < 0.7):
+                image_id=get_query['metadatas'][0][result]['image_id']
+                query_image = get_images(image_id)
+            
+                request_img = requests.get(query_image['public_url'])
+                image = Image.open(BytesIO(request_img.content))
+                images.append(image)
+                await update.message.reply_text(f"Found a relevant document with a distance of {get_query['distances'][0][result]}:\n{get_query['metadatas'][0][result]}")
+
+
         last_message = '' 
         for history in get_history_messages():
             history_message = f"{history['role']}: {history['message']}\n"
@@ -33,15 +61,15 @@ async def message(update:Update, context:ContextTypes.DEFAULT_TYPE)-> None:
         insert_message(role="user", message=update.message.text) 
         main_prompt = [
             f"History percakapan sebelumnya: {last_message}",
-            f"Pertanyaan Sekarang: {update.message.text}"
+            f"Pertanyaan Sekarang: {update.message.text}",
+            "jangan mengucapkan kata pembuka seperti 'hallo', 'selamat datang', apabila pada history percakapan sebelumnya sudah ada.",
+            "apabila pertanyaan sekarang ada di percakapan sebelumnya, gunakan jawaban sama dengan percakapan sebelumnya",
+            "Dibawah ini adalah Berisi materi yang kamu jadikan referensi utama, apabila materi dibawah kosong atau tidak ada atau tidak relevan dengan pertanyaan, jangan menjawab dengan pengetahuanmu.",
         ]
-  
+        main_prompt.extend(images)
         interaction = await interaction_ai(prompt=main_prompt)
-    
         insert_message(role="assistant_dosen", message=interaction)
         chunks = split_message_html(interaction)
-  
-
     except Exception as e:
         print(f"Error occurred: {e}")
         await update.message.reply_text("Sorry, I encountered an error while processing your request.")

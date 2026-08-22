@@ -45,8 +45,8 @@ async def document(update: Update, context: ContextTypes) -> None:
                     response = cloudinary.uploader.upload(image_bytes, public_id=public_id, folder="pdf_pages")
                     image_id = insert_image(response["secure_url"], f"{document.file_name}_page_{i + 1}", message_id)
                     collection.add(embeddings=[convert_embed.embeddings[0].values], ids=[f"image_{collection.count() + 1}"], metadatas=[{"title": f"{document.file_name}_page_{i + 1}", "image_id": str(image_id)}])
-
-              
+                    await update.message.reply_text(f"Page {i + 1} of the PDF has been processed and uploaded successfully.")
+               
             except Exception as e:
                 print(f"Error occurred while processing the document: {e}")
                 await update.message.reply_text("Sorry, I encountered an error while processing your document.")
