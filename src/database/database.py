@@ -34,3 +34,9 @@ def insert_image(public_url, filename: str, message_id:str, ):
         )
         conn.commit()
     return id
+
+def get_images(image_id):
+    with current_db() as cur:
+        cur.execute("SELECT public_url, filename FROM images WHERE id = %s", (image_id,))
+        rows = cur.fetchone()
+        return {"public_url": rows[0], "filename": rows[1]}
