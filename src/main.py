@@ -14,7 +14,14 @@ client = genai.Client(api_key=os.getenv("GENAI_API_KEY"))
 
 def main():
     chroma_client = chromadb.PersistentClient(path=".venv/chromadb_db")
-    collection = chroma_client.get_or_create_collection(name="dosen-ai")
+    collection = chroma_client.get_or_create_collection(
+    name="dosen-ai",
+    configuration={
+        "hnsw":{
+            "space": "cosine",
+            "ef_construction": 200,
+        }
+    })
     app = Application.builder().token(os.getenv("TELEGRAM_TOKEN")).build()
     # app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.ATTACHMENT, document))
