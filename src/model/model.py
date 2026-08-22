@@ -2,6 +2,7 @@
 import os 
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types
 load_dotenv()
 
 
@@ -16,3 +17,11 @@ async def interaction_ai(prompt: list[str]) -> str:
         }
     )
     return interaction.text
+
+async def embed_ai(contents:types.ContentListUnion | types.ContentListUnionDict, taskType:str) ->types.EmbedContentResponse:
+    embed = await client.aio.models.embed_content(
+        model="gemini-embedding-2",
+        contents=contents,
+        config=types.EmbedContentConfig(task_type=taskType)
+    )
+    return embed
