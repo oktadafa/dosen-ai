@@ -4,8 +4,8 @@ import asyncio
 # import os 
 from dotenv import load_dotenv
 # from google import genai
-from utils.split_message_html import split_message_html
-from database.database import insert_message, get_history_messages, get_images
+from src.utils.split_message_html import split_message_html
+from src.database.database import insert_message, get_history_messages, get_images
 from telegram.error import BadRequest
 import re
 import chromadb
@@ -13,7 +13,7 @@ import requests
 from io import BytesIO
 from PIL import Image
 
-from  model.model import interaction_ai, embed_ai
+from  src.model.model import interaction_ai, embed_ai
 load_dotenv()
 
 
@@ -35,7 +35,6 @@ async def message(update:Update, context:ContextTypes.DEFAULT_TYPE)-> None:
         client = chromadb.PersistentClient(path=".venv/chromadb_db")
         collection = client.get_collection(name="dosen-ai")
         embed_query = await embed_ai(contents=[update.message.text], taskType="RETRIEVAL_QUERY")
-        print(embed_query) 
         get_query = collection.query(
             query_embeddings=[embed_query.embeddings[0].values],
             n_results=3,
@@ -43,7 +42,6 @@ async def message(update:Update, context:ContextTypes.DEFAULT_TYPE)-> None:
         )
         
         for result in range(len(get_query['ids'][0])):
-            print(get_query,'test')
             if(get_query['distances'][0][result] < 0.7):
                 image_id=get_query['metadatas'][0][result]['image_id']
                 query_image = get_images(image_id)
@@ -64,7 +62,7 @@ async def message(update:Update, context:ContextTypes.DEFAULT_TYPE)-> None:
             f"Pertanyaan Sekarang: {update.message.text}",
             "jangan mengucapkan kata pembuka seperti 'hallo', 'selamat datang', apabila pada history percakapan sebelumnya sudah ada.",
             "apabila pertanyaan sekarang ada di percakapan sebelumnya, gunakan jawaban sama dengan percakapan sebelumnya",
-            "Dibawah ini adalah Berisi materi yang kamu jadikan referensi utama, apabila materi dibawah kosong atau tidak ada atau tidak relevan dengan pertanyaan, jangan menjawab dengan pengetahuanmu.",
+            "apabila pertanyaan berkaitan dengan mata kuliah, maka data dibawah ini wajib kamu jadikan referensi utama, jika data dibawah kosong atau tidak relevan dengan pertanyaan tersebut maka kamu boleh gunakan pengetahuanmu namun wajib bilang 'untuk materi tersbu, belum ada saat ini', namun ketika user bertanya pertanyaan yang masih relevan dengan sebelumnya kamu tidak perlu bilang ''untuk materi tersbu, belum ada saat ini'",                  
         ]
         main_prompt.extend(images)
         interaction = await interaction_ai(prompt=main_prompt)

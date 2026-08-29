@@ -1,7 +1,11 @@
 import psycopg
 from uuid import uuid4
 from datetime import datetime
-conn = psycopg.connect("host=localhost dbname=postgres user=postgres password=postgres")
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+conn = psycopg.connect(f"host={os.getenv("HOST_DATABASE")} port={os.getenv("PORT_DATABASE")} dbname={os.getenv("DATABASE_NAME")} user={os.getenv("DATABASE_USER")} password={os.getenv("DATABASE_PASSWORD")}")
 
 def current_db():
     return conn.cursor()
