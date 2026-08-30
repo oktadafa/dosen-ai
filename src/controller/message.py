@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import  ContextTypes
 import asyncio
-# import os 
+import os 
 from dotenv import load_dotenv
 # from google import genai
 from src.utils.split_message_html import split_message_html
@@ -32,8 +32,8 @@ async def message(update:Update, context:ContextTypes.DEFAULT_TYPE)-> None:
             
     typing_task = asyncio.create_task(keep_typing())        
     try: 
-        client = chromadb.PersistentClient(path=".venv/chromadb_db")
-        collection = client.get_collection(name="dosen-ai")
+        client = chromadb.HttpClient(host=os.getenv('CHROMA_HOST'), port=os.getenv("CHROMA_PORT"), ssl=False)
+        collection = client.get_collection(name=os.getenv("CHROMA_NAME"))
         embed_query = await embed_ai(contents=[update.message.text], taskType="RETRIEVAL_QUERY")
         get_query = collection.query(
             query_embeddings=[embed_query.embeddings[0].values],

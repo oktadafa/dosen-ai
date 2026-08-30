@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 import os
 from dotenv import load_dotenv
-from chromadb import PersistentClient
+from chromadb import PersistentClient, HttpClient
 from fastapi import FastAPI, Request
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
@@ -24,8 +24,8 @@ ptb_app.add_handler(MessageHandler(filters.TEXT, message))
 ptb_app.add_handler(MessageHandler(filters.ATTACHMENT, document))
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-  client = PersistentClient(".venv/chromadb_db")
-  collection = client.get_or_create_collection(name="dosen-ai", configuration={
+  client = HttpClient(host=os.getenv('CHROMA_HOST'), port=os.getenv("CHROMA_PORT"), ssl=False)
+  collection = client.get_or_create_collection(name=os.getenv("CHROMA_NAME"), configuration={
     "hnsw":{
       "space":"cosine",
       "ef_construction":200

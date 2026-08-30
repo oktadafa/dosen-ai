@@ -28,8 +28,8 @@ async def document(update: Update, context: ContextTypes) -> None:
         if update.message.document.mime_type == "application/pdf":
             try:
                 gemini = genai.Client(api_key=os.getenv("GENAI_API_KEY"))
-                client = chromadb.PersistentClient(path=".venv/chromadb_db")
-                collection = client.get_collection(name="dosen-ai")
+                client = chromadb.HttpClient(host=os.getenv('CHROMA_HOST'), port=os.getenv("CHROMA_PORT"), ssl=False)
+                collection = client.get_collection(name=os.getenv("CHROMA_NAME"))
                 cloudinary.config(
                     cloud_name="ddgad1ttp",
                     api_key=os.getenv("CLOUDINARY_API_KEY"),
