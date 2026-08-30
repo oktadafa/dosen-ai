@@ -69,7 +69,7 @@ async def message(update:Update, context:ContextTypes.DEFAULT_TYPE)-> None:
         insert_message(role="assistant_dosen", message=interaction)
         chunks = split_message_html(interaction)
     except Exception as e:
-        print(f"Error occurred: {e}")
+        print(f"Error occurred: {e}", flush=True)
         await update.message.reply_text("Sorry, I encountered an error while processing your request.")
     finally:
          typing_task.cancel()
