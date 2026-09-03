@@ -71,7 +71,7 @@ async def message(update:Update, context:ContextTypes.DEFAULT_TYPE)-> None:
         chunks = split_message_html(interaction)
     except Exception as e:
         logging.basicConfig(level=logging.INFO)
-        await update.message.reply_text(f"Sorry, I encountered an error while processing your request.")
+        await update.message.reply_text(f"Sorry, I encountered an error while processing your request. error msg: {str(e)}")
     finally:
          typing_task.cancel()
          await asyncio.gather(typing_task, return_exceptions=True) 
