@@ -22,8 +22,10 @@ ptb_app.add_handler(CommandHandler("start", start_command))
 
 ptb_app.add_handler(MessageHandler(filters.TEXT, message))
 ptb_app.add_handler(MessageHandler(filters.ATTACHMENT, document))
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+  # 1. Tetap pertahankan koneksi database Chroma Anda
   client = HttpClient(host=os.getenv('CHROMA_HOST'), port=os.getenv("CHROMA_PORT"), ssl=False)
   collection = client.get_or_create_collection(name=os.getenv("CHROMA_NAME"), configuration={
     "hnsw":{
@@ -31,16 +33,19 @@ async def lifespan(app: FastAPI):
       "ef_construction":200
     }
   })
+  
+  # 2. Tetap pertahankan inisialisasi internal bot telegram
   await ptb_app.initialize()
-  await ptb_app.bot.set_webhook(url=f"{WEBHOOK_URL}/webhook")
-  print(f"Webhook berhasil di-set ke: {WEBHOOK_URL}/webhook")
+  
+  # ❌ BARIS SET_WEBHOOK DI SINI SUDAH DIHAPUS (Dipindah ke skrip manual luar)
+  print("Aplikasi startup berhasil di Vercel.")
 
   yield
 
-  await ptb_app.bot.delete_webhook()
+  # ❌ BARIS DELETE_WEBHOOK DI SINI SUDAH DIHAPUS
+  # 3. Tetap panggil shutdown internal aplikasi python-telegram-bot Anda
   await ptb_app.shutdown()
-  print("Webhook berhasil dihapus.")
-
+  print("Aplikasi shutdown selesai.")
 
 app = FastAPI(lifespan=lifespan)
 
