@@ -34,7 +34,7 @@ async def message(update:Update, context:ContextTypes.DEFAULT_TYPE)-> None:
     typing_task = asyncio.create_task(keep_typing())        
     try: 
         client = chromadb.HttpClient(host=os.getenv('CHROMA_HOST'), port=os.getenv("CHROMA_PORT"), ssl=False)
-        collection = client.get_collection(name=os.getenv("CHROMA_NAME"))
+        collection = client.get_or_create_collection(name=os.getenv("CHROMA_NAME"))
         embed_query = await embed_ai(contents=[update.message.text], taskType="RETRIEVAL_QUERY")
         get_query = collection.query(
             query_embeddings=[embed_query.embeddings[0].values],
