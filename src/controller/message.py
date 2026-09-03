@@ -12,11 +12,12 @@ import chromadb
 import requests
 from io import BytesIO
 from PIL import Image
-
+import logging
 from  src.model.model import interaction_ai, embed_ai
 load_dotenv()
 
 
+# logging.basicConfig(level=logging)
 
 async def message(update:Update, context:ContextTypes.DEFAULT_TYPE)-> None:
     chunks = []
@@ -69,8 +70,8 @@ async def message(update:Update, context:ContextTypes.DEFAULT_TYPE)-> None:
         insert_message(role="assistant_dosen", message=interaction)
         chunks = split_message_html(interaction)
     except Exception as e:
-        print(f"Error occurred: {e}", flush=True)
-        await update.message.reply_text("Sorry, I encountered an error while processing your request.")
+        logging.basicConfig(level=logging.INFO)
+        await update.message.reply_text(f"Sorry, I encountered an error while processing your request.")
     finally:
          typing_task.cancel()
          await asyncio.gather(typing_task, return_exceptions=True) 
